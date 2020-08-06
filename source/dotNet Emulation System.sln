@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29306.81
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dNES.Core", "dNES.Core\dNES.Core.csproj", "{A1FD5BB3-0761-4378-A64F-330E7CEFEBC3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dNES.ConsoleHarness", "dNES.ConsoleHarness\dNES.ConsoleHarness.csproj", "{D0D0E132-572A-47E8-B170-9AC57359FE61}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A1FD5BB3-0761-4378-A64F-330E7CEFEBC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1FD5BB3-0761-4378-A64F-330E7CEFEBC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1FD5BB3-0761-4378-A64F-330E7CEFEBC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1FD5BB3-0761-4378-A64F-330E7CEFEBC3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0D0E132-572A-47E8-B170-9AC57359FE61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0D0E132-572A-47E8-B170-9AC57359FE61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0D0E132-572A-47E8-B170-9AC57359FE61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0D0E132-572A-47E8-B170-9AC57359FE61}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {33E15520-C3DC-48C3-8C01-74DEE33B96EB}
+	EndGlobalSection
+EndGlobal

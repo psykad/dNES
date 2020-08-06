@@ -1,0 +1,13 @@
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.ConsoleHarness\bin\Debug\dNES.ConsoleHarness.exe.config
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.ConsoleHarness\bin\Debug\dNES.ConsoleHarness.exe
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.ConsoleHarness\bin\Debug\dNES.ConsoleHarness.pdb
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.ConsoleHarness\bin\Debug\dNES.Core.dll
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.ConsoleHarness\bin\Debug\dNES.Core.pdb
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.ConsoleHarness\obj\Debug\dNES.ConsoleHarness.csprojAssemblyReference.cache
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.ConsoleHarness\obj\Debug\dNES.ConsoleHarness.csproj.CoreCompileInputs.cache
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.ConsoleHarness\obj\Debug\dNES.ConsoleHarness.csproj.CopyComplete
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.ConsoleHarness\obj\Debug\dNES.ConsoleHarness.exe
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.ConsoleHarness\obj\Debug\dNES.ConsoleHarness.pdb
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.ConsoleHarness\bin\Debug\OpenTK.dll
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.ConsoleHarness\bin\Debug\OpenTK.pdb
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.ConsoleHarness\bin\Debug\OpenTK.xml

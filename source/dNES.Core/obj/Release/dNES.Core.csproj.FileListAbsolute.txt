@@ -1,0 +1,6 @@
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.Core\bin\Release\dNES.Core.dll
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.Core\bin\Release\dNES.Core.pdb
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.Core\obj\Release\dNES.Core.csprojAssemblyReference.cache
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.Core\obj\Release\dNES.Core.csproj.CoreCompileInputs.cache
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.Core\obj\Release\dNES.Core.dll
+C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.Core\obj\Release\dNES.Core.pdb
