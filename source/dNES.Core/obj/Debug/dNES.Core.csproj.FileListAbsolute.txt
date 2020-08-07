@@ -1,6 +1,0 @@
-C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.Core\bin\Debug\dNES.Core.dll
-C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.Core\bin\Debug\dNES.Core.pdb
-C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.Core\obj\Debug\dNES.Core.csprojAssemblyReference.cache
-C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.Core\obj\Debug\dNES.Core.csproj.CoreCompileInputs.cache
-C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.Core\obj\Debug\dNES.Core.dll
-C:\Users\Ryan\source\repos\dotNet Emulation System\dNES.Core\obj\Debug\dNES.Core.pdb

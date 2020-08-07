@@ -1,0 +1,12 @@
+
+source/packages/
+
+source/.vs/
+
+source/dNES.Core/bin/
+
+source/dNES.Core/obj/
+
+source/dNES.ConsoleHarness/bin/
+
+source/dNES.ConsoleHarness/obj/

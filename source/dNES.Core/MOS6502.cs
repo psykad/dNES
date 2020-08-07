@@ -1,33 +1,13 @@
-﻿using System;
+﻿#define NESTEST
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 
 namespace dNES.Core
 {
     class MOS6502
     {
-        private readonly Func<ushort, byte> _read;
-        private readonly Action<ushort, byte> _write;
-
-        /// <summary>Carry Flag</summary>
-        private const byte C = 0;
-
-        /// <summary>Zero Flag</summary>
-        private const byte Z = 1;
-
-        /// <summary>Interrupt Disable Flag</summary>
-        private const byte I = 2;
-
-        /// <summary>Decimal Flag</summary>
-        private const byte D = 3;
-
-        /// <summary>Overflow Flag</summary>
-        private const byte V = 6;
-
-        /// <summary>Negative Flag</summary>
-        private const byte N = 7;
-
         private struct Registers
         {
             /// <summary>Accumulator Register</summary>
@@ -49,16 +29,70 @@ namespace dNES.Core
             public byte P;
         }
 
-        private readonly Dictionary<byte, Instruction> _instructions;
-        private Registers _registers;
-        private Instruction _currentInstruction;
-        private ushort _effectiveAddress;
-        private byte _fetched;
-        private byte _cycles;
+        #region Processor Status Flags
+        /// <summary>Carry Flag</summary>
+        private const byte C = 0;
 
-        private int _totalCycles = 7;
+        /// <summary>Zero Flag</summary>
+        private const byte Z = 1;
+
+        /// <summary>Interrupt Disable Flag</summary>
+        private const byte I = 2;
+
+        /// <summary>Decimal Flag</summary>
+        private const byte D = 3;
+
+        /// <summary>Overflow Flag</summary>
+        private const byte V = 6;
+
+        /// <summary>Negative Flag</summary>
+        private const byte N = 7;
+        #endregion
+
+        /// <summary>Delegate for CPU Bus reads.</summary>
+        private readonly Func<ushort, byte> _read;
+
+        /// <summary>Delegate for CPU Bus writes.</summary>
+        private readonly Action<ushort, byte> _write;
+
+        private readonly Dictionary<byte, Instruction> _instructions;
+
+        private Registers _registers;
+
+        /// <summary>
+        /// The active/last instruction to be executed.
+        /// </summary>
+        private Instruction _currentInstruction;
+
+        /// <summary>
+        /// Op-code of the current instruction.
+        /// </summary>
+        private byte _opCode;
+
+        /// <summary>
+        /// The target memory address for the current instruction's address mode.
+        /// </summary>
+        private ushort _effectiveAddress;
+
+        /// <summary>
+        /// The data fetched from the effective address.
+        /// </summary>
+        private byte _fetched;
+
+        /// <summary>
+        /// The flag used to store whether or memory was paged during access.
+        /// </summary>
         private bool _paged;
 
+        /// <summary>
+        /// Contains the total cycles needed to finish the current operation.
+        /// </summary>
+        private byte _cycles;
+
+        /// <summary>
+        /// The total cycles since CPU was started.
+        /// </summary>
+        private int _totalCycles = 7;
 
         private const ushort ResetVector = 0xFFFC;
 
@@ -171,14 +205,8 @@ namespace dNES.Core
         {
             if (_cycles == 0)
             {
+                _currentInstruction = _instructions[_opCode = Read(_registers.PC++)];
                 _paged = false;
-
-                var output = $"{_registers.PC:X4}";
-                var opCode = Read(_registers.PC++);
-                _currentInstruction = _instructions[opCode];
-                output += $"\tA:{_registers.A:X2}\tX:{_registers.X:X2}\tY:{_registers.Y:X2}\tP:{_registers.P:X2}\tSP:{_registers.S:X2}\tCYC:{_totalCycles}\t{(_registers.PC - 1):X4}\t{opCode:X2}\t{_currentInstruction.Operation.Method.Name}\t{_currentInstruction.AddressMode.Method.Name}";
-                Debug.WriteLine(output);
-                //Log(output);
                 _currentInstruction.AddressMode();
                 _currentInstruction.Operation();
                 _totalCycles += _cycles;
@@ -187,25 +215,21 @@ namespace dNES.Core
             _cycles--;
         }
 
-        private void Log(string message)
-        {
-            var filename = @"C:\users\ryan\desktop\dnes.log";
-
-            using (var streamWriter = new StreamWriter(filename, true))
-            {
-                streamWriter.WriteLine(message);
-            }
-        }
-
         /// <summary>
         /// Initializes CPU to power on state.
         /// </summary>
+        /// <remarks>
+        /// See http://wiki.nesdev.com/w/index.php/CPU_power_up_state for info on power up state.
+        /// </remarks>
         public void PowerOn()
         {
-            // http://wiki.nesdev.com/w/index.php/CPU_power_up_state
             _registers.PC = (ushort)((_read(ResetVector + 1) << 8) + _read(ResetVector));
 
+#if NESTEST
+            // Jump to NESTEST reset vector.
             _registers.PC = 0xC000;
+#endif
+
             Debug.WriteLine($"Reset Vector: {ResetVector:X4}");
             Debug.WriteLine($"Program Start: {_registers.PC:X4}");
             _registers.P = 0x24; // IRQ disabled
@@ -218,10 +242,12 @@ namespace dNES.Core
         /// <summary>
         /// Initializes CPU to reset state.
         /// </summary>
+        /// <remarks>
+        /// See http://wiki.nesdev.com/w/index.php/CPU_power_up_state for info on reset state.
+        /// </remarks>
         public void Reset()
         {
-            // http://wiki.nesdev.com/w/index.php/CPU_power_up_state
-            _registers.PC = (ushort)((_read(0xFFFC) << 8) + _read(0xFFFD));
+            _registers.PC = (ushort)((_read(ResetVector + 1) << 8) + _read(ResetVector));
             _registers.S -= 3;
             _registers.P |= 0x04;
         }
@@ -248,11 +274,19 @@ namespace dNES.Core
             _write(address, data);
         }
 
+        /// <summary>
+        /// Pushes one byte of data to the stack.
+        /// </summary>
+        /// <param name="data">The date to be pushed.</param>
         void Push(byte data)
         {
             Write((ushort)(0x0100 + _registers.S--), data);
         }
 
+        /// <summary>
+        /// Pulls one byte of data from the stack.
+        /// </summary>
+        /// <returns>The data from the stack.</returns>
         byte Pull()
         {
             return Read((ushort)(0x0100 + ++_registers.S));
@@ -261,6 +295,9 @@ namespace dNES.Core
         /// <summary>
         /// Fetches the byte located at the effective address or accumulator.
         /// </summary>
+        /// <remarks>
+        /// Implied (IMP) fetches don't read from memory, therefore they don't cause an extra cycle.
+        /// </remarks>
         /// <returns>The 8-bit data.</returns>
         byte Fetch()
         {
@@ -272,8 +309,8 @@ namespace dNES.Core
         /// <summary>
         /// Sets the given status flag's state.
         /// </summary>
-        /// <param name="flag"></param>
-        /// <param name="value"></param>
+        /// <param name="flag">The processor flag to update.</param>
+        /// <param name="value">The value to set the flag to.</param>
         void SetFlag(byte flag, bool value)
         {
             if (value)
@@ -285,8 +322,8 @@ namespace dNES.Core
         /// <summary>
         /// Gets the given status flag's state.
         /// </summary>
-        /// <param name="flag"></param>
-        /// <returns></returns>
+        /// <param name="flag">The processor flag to check.</param>
+        /// <returns>The value of the processor flag.</returns>
         bool GetFlag(byte flag)
         {
             return (_registers.P & (0x01 << flag)) > 0;
@@ -295,85 +332,71 @@ namespace dNES.Core
         /// <summary>
         /// 8-bit adder with carry.
         /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <param name="carry"></param>
-        /// <returns></returns>
+        /// <param name="a">The first value.</param>
+        /// <param name="b">The second value.</param>
+        /// <param name="carry">The carry result of the addition.</param>
+        /// <returns>The sum of parameters 'a' and 'b'.</returns>
         byte Adder(byte a, byte b, out bool carry)
         {
             var result = a + b;
-
             carry = (result & 0x100) > 0;
-
             return (byte)result;
         }
 
-        #region Instruction Helpers
+        /// <summary>
+        /// Shared branch routine for all branch instructions.
+        /// </summary>
+        /// <param name="condition">The condition that determines the branch.</param>
         void Branch(bool condition)
         {
             // Cycle 2
             var operand = _fetched;
 
-            if (condition) // Take branch
-            {
-                // Cycle 3
-                Read(_registers.PC);
+            if (!condition) return; 
 
-                var PCL = (byte)(_registers.PC & 0xFF);
-                var PCH = (byte)(_registers.PC >> 8);
+            // Cycle 3
+            Read(_registers.PC);
 
-                int offset = operand;
+            var PCL = (byte)(_registers.PC & 0xFF);
+            var PCH = (byte)(_registers.PC >> 8);
 
-                if (offset > 127) offset = -(byte)(~operand + 1);
+            int offset = operand;
 
-                PCL = (byte)(PCL + offset);
-                var targetPC = (ushort)(_registers.PC + offset);
-                _registers.PC = (ushort)((PCH << 8) + PCL);
+            if (offset > 127) offset = -(byte)(~operand + 1);
 
-                var paged = false;
-                if (_registers.PC != targetPC)
-                {
-                    // PCH doesn't match. Use correct PC.
-                    _registers.PC = targetPC;
-                    paged = true;
-                }
+            PCL = (byte)(PCL + offset);
+            var targetPC = (ushort)(_registers.PC + offset);
+            _registers.PC = (ushort)((PCH << 8) + PCL);
 
-                if (paged)
-                {
-                    // Cycle 4
-                    Read(_registers.PC++);
-                }
-            }
+            if (_registers.PC == targetPC) return;
+
+            // PCH doesn't match. Use correct PC.
+            _registers.PC = targetPC;
+
+            // Cycle 4
+            Read(_registers.PC++);
         }
-        #endregion
 
         #region Addressing Modes
-        /// <summary>
-        /// Accumulator
-        /// </summary>
-        /// <remarks>
-        /// Pulls value from accumulator into fetched byte.
-        /// </remarks>
+        /// <summary>Accumulator Addressing</summary>
+        /// <remarks>Pulls value from accumulator into fetched byte.</remarks>
         void ACC()
         {
             _fetched = _registers.A;
-            Read(_registers.PC);
+
+            // Read next instruction, throw it away.
+            _cycles++;
         }
 
-        /// <summary>
-        /// Implied
-        /// </summary>
-        /// <remarks>
-        /// Read next address and throw it away.
-        /// </remarks>
+        /// <summary>Implied Addressing</summary>
+        /// <remarks>Read next address and throw it away.</remarks>
         void IMP()
         {
-            _fetched = Read(_registers.PC);
+            // Read next instruction, throw it away.
+            _cycles++;
         }
 
-        /// <summary>
-        /// Immediate
-        /// </summary>
+        /// <summary>Immediate Addressing</summary>
         /// <remarks>
         /// Immediate addressing allows the programmer to directly specify an
         /// 8 bit constant within the instruction. It is indicated by a '#' symbol
@@ -384,9 +407,7 @@ namespace dNES.Core
             _effectiveAddress = _registers.PC++;
         }
 
-        /// <summary>
-        /// Zero Page
-        /// </summary>
+        /// <summary>Zero Page Addressing</summary>
         /// <remarks>
         /// An instruction using zero page addressing mode has only an 8 bit address operand.
         /// This limits it to addressing only the first 256 bytes of memory (e.g. $0000 to $00FF)
@@ -400,14 +421,11 @@ namespace dNES.Core
         /// </remarks>
         void ZPG()
         {
-            var lo = Read(_registers.PC++);
-
-            _effectiveAddress = lo;
+            // Cycle 2
+            _effectiveAddress = Read(_registers.PC++);
         }
 
-        /// <summary>
-        /// Zero Page, X
-        /// </summary>
+        /// <summary>Zero Page, X Addressing</summary>
         /// <remarks>
         /// The address to be accessed by an instruction using indexed zero page addressing is
         /// calculated by taking the 8 bit zero page address from the instruction and adding the
@@ -417,16 +435,16 @@ namespace dNES.Core
         /// </remarks>
         void ZPX()
         {
-            var lo = Read(_registers.PC++);
-            Read(lo);
-            lo += _registers.X;
+            // Cycle 2
+            var zeroPage = Read(_registers.PC++);
 
-            _effectiveAddress = lo;
+            // Cycle 3
+            Read(zeroPage);
+
+            _effectiveAddress = (byte)(zeroPage + _registers.X);
         }
 
-        /// <summary>
-        /// Zero Page, Y
-        /// </summary>
+        /// <summary>Zero Page, Y Addressing</summary>
         /// <remarks>
         /// The address to be accessed by an instruction using indexed zero page addressing is
         /// calculated by taking the 8 bit zero page address from the instruction and adding the
@@ -434,16 +452,16 @@ namespace dNES.Core
         /// </remarks>
         void ZPY()
         {
-            var lo = Read(_registers.PC++);
-            Read(lo);
-            lo += _registers.Y;
+            // Cycle 2
+            var zeroPage = Read(_registers.PC++);
 
-            _effectiveAddress = lo;
+            // Cycle 3
+            Read(zeroPage);
+
+            _effectiveAddress = (byte)(zeroPage + _registers.Y);
         }
 
-        /// <summary>
-        /// Absolute
-        /// </summary>
+        /// <summary>Absolute Addressing</summary>
         /// <remarks>
         /// Instructions using absolute addressing contain a full 16 bit address to identify the target location.
         /// </remarks>
@@ -458,9 +476,7 @@ namespace dNES.Core
             _effectiveAddress = (ushort)((hi << 8) + lo);
         }
 
-        /// <summary>
-        /// Absolute, X
-        /// </summary>
+        /// <summary>Absolute, X Addressing</summary>
         /// <remarks>
         /// The address to be accessed by an instruction using X register indexed absolute
         /// addressing is computed by taking the 16 bit address from the instruction and
@@ -479,7 +495,7 @@ namespace dNES.Core
             // Cycle 4
             _effectiveAddress = (ushort)((hi << 8) + lo);
 
-            if (new List<string> {"ASL", "LSR", "ROL", "ROR", "INC", "DEC", "STA", "STX", "STY"}
+            if (new List<string> { "ASL", "LSR", "ROL", "ROR", "INC", "DEC", "STA", "STX", "STY" }
                 .Exists(item => item == _currentInstruction.Operation.Method.Name))
                 Read(_effectiveAddress);
 
@@ -487,13 +503,10 @@ namespace dNES.Core
 
             // Cycle 5
             _paged = true;
-            hi++; // A carry occurred to HI byte.
-            _effectiveAddress = (ushort)((hi << 8) + lo);
+            _effectiveAddress = (ushort)((++hi << 8) + lo);
         }
 
-        /// <summary>
-        /// Absolute, Y
-        /// </summary>
+        /// <summary>Absolute, Y Addressing</summary>
         /// <remarks>
         /// The Y register indexed absolute addressing mode is the same as the previous mode
         /// only with the contents of the Y register added to the 16 bit address from the instruction.
@@ -514,14 +527,12 @@ namespace dNES.Core
 
             if (!carry) return;
 
+            // Cycle 5
             _paged = true;
-            hi++;
-            _effectiveAddress = (ushort)((hi << 8) + lo);
+            _effectiveAddress = (ushort)((++hi << 8) + lo);
         }
 
-        /// <summary>
-        /// Indirect Addressing
-        /// </summary>
+        /// <summary>Indirect Addressing</summary>
         void IND()
         {
             // Cycle 2
@@ -541,9 +552,7 @@ namespace dNES.Core
             _effectiveAddress = (ushort)((PCH << 8) + PCL);
         }
 
-        /// <summary>
-        /// Indexed Indirect
-        /// </summary>
+        /// <summary>Indexed Indirect Addressing</summary>
         /// <remarks>
         /// Indexed indirect addressing is normally used in conjunction with a table of address held
         /// on zero page. The address of the table is taken from the instruction and the X register
@@ -568,9 +577,7 @@ namespace dNES.Core
             _effectiveAddress = (ushort)((hi << 8) + lo);
         }
 
-        /// <summary>
-        /// Indirect Indexed
-        /// </summary>
+        /// <summary>Indirect Indexed Addressing</summary>
         /// <remarks>
         /// Indirect indirect addressing is the most common indirection mode used on the 6502.
         /// In instruction contains the zero page location of the least significant byte of
@@ -590,18 +597,21 @@ namespace dNES.Core
             lo = Adder(lo, _registers.Y, out var carry);
 
             _effectiveAddress = (ushort)((hi << 8) + lo);
+
             if (_currentInstruction.Operation == STA) Read(_effectiveAddress);
 
             if (!carry) return;
 
+            // Cycle 5
             _paged = true;
-            hi++;
-            _effectiveAddress = (ushort)((hi << 8) + lo);
+            _effectiveAddress = (ushort)((++hi << 8) + lo);
         }
 
-        /// <summary>
-        /// Relative Addressing
-        /// </summary>
+        /// <summary>Relative Addressing</summary>
+        /// <remarks>
+        /// The byte following the instruction op-code is the operand used to adjust the
+        /// program counter to a relative address.
+        /// </remarks>
         void REL()
         {
             _fetched = Read(_registers.PC++);
@@ -662,9 +672,7 @@ namespace dNES.Core
         /// </remarks>
         void AND()
         {
-            var data = Fetch();
-
-            _registers.A &= data;
+            _registers.A &= Fetch();
 
             SetFlag(N, (_registers.A & 0x80) > 0);
             SetFlag(Z, _registers.A == 0);
@@ -688,23 +696,23 @@ namespace dNES.Core
         /// </remarks>
         void ASL()
         {
-            if (_currentInstruction.AddressMode != ACC) Fetch();
-            var value = _fetched;
+            if (_currentInstruction.AddressMode != ACC)
+                Fetch();
 
-            SetFlag(C, (value & 0x80) > 0);
+            SetFlag(C, (_fetched & 0x80) > 0);
 
             if (_currentInstruction.AddressMode != ACC)
-                Write(_effectiveAddress, value);
+                Write(_effectiveAddress, _fetched);
 
-            value = (byte)(value << 1);
+            _fetched = (byte)(_fetched << 1);
 
             if (_currentInstruction.AddressMode == ACC)
-                _registers.A = value;
+                _registers.A = _fetched;
             else
-                Write(_effectiveAddress, value);
+                Write(_effectiveAddress, _fetched);
 
-            SetFlag(N, (value & 0x80) > 0);
-            SetFlag(Z, value == 0);
+            SetFlag(N, (_fetched & 0x80) > 0);
+            SetFlag(Z, _fetched == 0);
         }
 
         /// <summary>
@@ -719,7 +727,7 @@ namespace dNES.Core
         /// </remarks>
         void BCC()
         {
-            Branch(GetFlag(C) == false);
+            Branch(!GetFlag(C));
         }
 
         /// <summary>
@@ -767,12 +775,12 @@ namespace dNES.Core
         /// </remarks>
         void BIT()
         {
-            var value = Fetch();
+            Fetch();
 
-            SetFlag(N, (value & 0x80) > 0);
-            SetFlag(V, (value & 0x40) > 0);
-            value &= _registers.A;
-            SetFlag(Z, value == 0);
+            SetFlag(N, (_fetched & 0x80) > 0);
+            SetFlag(V, (_fetched & 0x40) > 0);
+            _fetched &= _registers.A;
+            SetFlag(Z, _fetched == 0);
         }
 
         /// <summary>
@@ -802,7 +810,7 @@ namespace dNES.Core
         /// </remarks>
         void BNE()
         {
-            Branch(GetFlag(Z) == false);
+            Branch(!GetFlag(Z));
         }
 
         /// <summary>
@@ -817,7 +825,7 @@ namespace dNES.Core
         /// </remarks>
         void BPL()
         {
-            Branch(GetFlag(N) == false);
+            Branch(!GetFlag(N));
         }
 
         /// <summary>
@@ -833,8 +841,8 @@ namespace dNES.Core
         void BRK()
         {
             // Cycle 2
-            _registers.PC++; // "read" next byte, throw away, inc PC
-            _cycles++;
+            _cycles++; // "read" next byte, throw away, inc PC
+            _registers.PC++; 
 
             // Cycle 3
             Push((byte)(_registers.PC >> 8));
@@ -868,7 +876,7 @@ namespace dNES.Core
         /// </remarks>
         void BVC()
         {
-            Branch(GetFlag(V) == false);
+            Branch(!GetFlag(V));
         }
 
         /// <summary>
@@ -1346,8 +1354,7 @@ namespace dNES.Core
         /// </remarks>
         void ORA()
         {
-            var value = Fetch();
-            _registers.A = (byte)(_registers.A | value);
+            _registers.A = (byte)(_registers.A | Fetch());
             SetFlag(N, (_registers.A & 0x80) > 0);
             SetFlag(Z, _registers.A == 0);
 
@@ -1397,8 +1404,10 @@ namespace dNES.Core
         /// </remarks>
         void PLA()
         {
+            // Cycle 3
             _cycles++;
 
+            // Cycle 4
             _registers.A = Pull();
 
             SetFlag(N, (_registers.A & 0x80) > 0);
